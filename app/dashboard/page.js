@@ -10,4 +10,3 @@ export default function DashboardPage() {
 
   return <Main>{children}</Main>;
 }
-//
