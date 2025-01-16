@@ -4,7 +4,7 @@ import Main from "@/components/Main";
 import React from "react";
 
 export default function DashboardPage() {
-  const isAuthenticated = false;
+  const isAuthenticated = true;
 
   let children = isAuthenticated ? <Dashboard /> : <Login />;
 
