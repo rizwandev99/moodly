@@ -1,6 +1,8 @@
 import React from "react";
 import Hero from "./Hero";
 import { fugaz } from "@/app/layout";
+import Calendar from "./Calendar";
+
 
 export default function Dashboard() {
   const statuses = {
@@ -34,9 +36,11 @@ export default function Dashboard() {
           );
         })}
       </div>
+
       <h4 className={"text-5xl sm:text-6xl md:text-7xl " + fugaz.className}>
         How do you <span className={"textGradient "}>feel</span> today?
       </h4>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
         {Object.keys(moods).map((mood, moodIndex) => {
           return (
@@ -66,6 +70,8 @@ export default function Dashboard() {
           );
         })}
       </div>
+
+      <Calendar />
     </div>
   );
 }
