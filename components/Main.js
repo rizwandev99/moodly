@@ -1,8 +1,11 @@
-import React from 'react'
+import React from "react";
 
-export default function Main(props) {
-const {children} = props 
-    return (
-    <div className='flex-1 flex flex-col p-4 sm:p-8 '>{children}</div>
-  )
-}
+const Main = ({ children }) => {
+  return (
+    <div className="w-full max-w-[1000px] mx-auto min-h-screen flex flex-col ">
+      {children}
+    </div>
+  );
+};
+
+export default Main;

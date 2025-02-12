@@ -1,15 +1,82 @@
-import React from "react";
-import Hero from "./Hero";
-import { fugaz } from "@/app/layout";
-import Calendar from "./Calendar";
+"use client";
 
+import { useAuth } from "@/context/AuthContext";
+import React, { useEffect, useState } from "react";
+import Login from "./Login";
+import { db } from "@/firebase";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { Average } from "next/font/google";
+import Calendar from "@/components/Calendar";
 
-export default function Dashboard() {
-  const statuses = {
-    num_days: 14,
-    time_remaining: "13:14:26",
-    date: new Date().toDateString(),
-  };
+function Dashboard() {
+  const { currentUser, userDataObj, setUserDataObj, loading } = useAuth();
+  const [data, setData] = useState({});
+  const [timeRemaining, setTimeRemaining] = useState("0H 0M 0S");
+  const [highlights, setHighlights] = useState({
+    num_days: 0,
+    average_mood: 0,
+    time_remaining: "0H 0M 0S",
+  });
+
+  useEffect(() => {
+    if (!currentUser || !userDataObj) {
+      return;
+    }
+    setData(userDataObj);
+  }, [currentUser, userDataObj]);
+
+  useEffect(() => {
+    if (!currentUser || !userDataObj) return;
+
+    // Calculate number of days with entries
+    const numDays = userDataObj.moodEntries
+      ? Object.keys(userDataObj.moodEntries).length
+      : 0;
+
+    // Calculate average mood
+    let totalMood = 0;
+    if (userDataObj.moodEntries) {
+      totalMood = Object.values(userDataObj.moodEntries).reduce(
+        (sum, val) => sum + val,
+        0
+      );
+    }
+    const average = numDays > 0 ? (totalMood / numDays).toFixed(1) : 0;
+
+    setHighlights((prev) => ({
+      ...prev,
+      num_days: numDays,
+      average_mood: average,
+    }));
+  }, [userDataObj]);
+
+  useEffect(() => {
+    const calculateTimeRemaining = () => {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+
+      const diff = midnight - now;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      return `${hours}H ${minutes}M ${seconds}S`;
+    };
+
+    // Update immediately and then every second
+    setTimeRemaining(calculateTimeRemaining());
+    const timer = setInterval(() => {
+      setTimeRemaining(calculateTimeRemaining());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  if (!currentUser) {
+    return <Login />;
+  }
+
   const moods = {
     "&*@#$": "😭",
     Sad: "🥲",
@@ -17,61 +84,86 @@ export default function Dashboard() {
     Good: "😊",
     Elated: "😍",
   };
+
+  // Helper function to format labels
+  const formatLabel = (str) => {
+    return str
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  async function handleMoodClick(moodNumber) {
+    if (!currentUser) return;
+
+    const date = new Date();
+    const dateString = `${date.getDate()}-${
+      date.getMonth() + 1
+    }-${date.getFullYear()}`;
+
+    try {
+      await setDoc(
+        doc(db, "users", currentUser.uid),
+        {
+          moodEntries: {
+            [dateString]: moodNumber,
+          },
+        },
+        { merge: true }
+      );
+
+      const docSnap = await getDoc(doc(db, "users", currentUser.uid));
+      const updatedData = docSnap.data();
+
+      console.log("Updated mood data:", updatedData);
+      setUserDataObj(updatedData);
+      setData(updatedData);
+    } catch (error) {
+      console.error("Error saving mood:", error);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 gap-8 sm:gap-12 md:gap-16">
-      <div className="grid grid-cols-1 sm:grid-cols-3 bg-indigo-50 text-indigo-500 rounded-lg">
-        {Object.keys(statuses).map((status, statusIndex) => {
+    <div>
+      {/* Highlights */}
+      <div className="flex justify-around mx-4 my-6 rounded-xl bg-indigo-100">
+        {Object.keys(highlights).map((high, highIndex) => {
           return (
             <div
-              key={statusIndex}
-              className="flex flex-col gap-1 sm:gap-2 p-2 sm:p-4"
+              key={highIndex}
+              className="flex flex-col justify-center items-center p-2 text-md text-indigo-600"
             >
-              <p className="font-medium uppercase text-xs sm:text-sm truncate ">
-                {status.replaceAll("_", " ")}
-              </p>
-              <p className={"text-sm sm:text:lg " + fugaz.className}>
-                {statuses[status]}
+              <p className="font-bold">{formatLabel(high)}</p>
+              <p className="fugaz  pt-2 text-md ">
+                {high === "time_remaining" ? timeRemaining : highlights[high]}
               </p>
             </div>
           );
         })}
       </div>
-
-      <h4 className={"text-5xl sm:text-6xl md:text-7xl " + fugaz.className}>
-        How do you <span className={"textGradient "}>feel</span> today?
-      </h4>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+      {/* Main Message */}
+      <h1 className="fugaz text-6xl text-center">
+        How do you <span className=" textGradient ">feel</span> today?{" "}
+      </h1>
+      <div className="flex justify-center items-center pt-6">
         {Object.keys(moods).map((mood, moodIndex) => {
           return (
-            <button
-              className={
-                "py-4 purpleShadow duration-200 bg-indigo-50 hover:bg-indigo-100 " +
-                (moodIndex === 4 ? "sm:col-span-2 md:col-span-1" : " ")
-              }
+            <div
               key={moodIndex}
+              onClick={() => handleMoodClick(moodIndex)}
+              className="flex flex-col p-1 m-4 text-center justify-between align-center bg-indigo-100 rounded-2xl cursor-pointer transition-transform duration-200 hover:scale-105 hover:bg-indigo-300"
             >
-              <p
-                className={
-                  "text-5xl sm:text-6xl md:text-7xl " + fugaz.className
-                }
-              >
-                {moods[mood]}
-              </p>
-              <p
-                className={
-                  "text-indigo-800 text-xs sm:text-sm md:text-base pt-4  " +
-                  fugaz.className
-                }
-              >
-                {mood}
-              </p>
-            </button>
+              <p className="text-8xl">{moods[mood]}</p>
+              <p className="pt-4 text-2xl text-indigo-600 fugaz">{mood}</p>
+            </div>
           );
         })}
       </div>
-
-      <Calendar />
+      <div className="mt-8 mx-4">
+        <Calendar moodEntries={data.moodEntries || {}} />
+      </div>
     </div>
   );
 }
+
+export default Dashboard;

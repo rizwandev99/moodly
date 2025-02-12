@@ -1,22 +1,20 @@
-import { fugaz } from "@/app/layout";
 import React from "react";
 
-export default function Button({ text, dark, full }) {
+function Button({ text, dark, onClick, width = "w-fit" }) {
   return (
     <div
-      className={
-        "rounded-full overflow-hidden duration-200 hover:opacity-60 border-2 border-solid border-indigo-600 " +
-        (dark ? "text-white bg-indigo-600 " : " text-indigo-600 ") +
-        (full ? "w-full grid place-items-center " : "")
-      }
+      onClick={onClick}
+      className={`inline-block border-2 border-indigo-600 rounded-full px-6 py-2 cursor-pointer transition-colors duration-300 text-center ${
+        dark
+          ? "bg-indigo-600 text-white hover:bg-indigo-700"
+          : "bg-white text-indigo-600 hover:bg-indigo-100"
+      } 
+      ${width}
+      `}
     >
-      <p
-        className={
-          "px-6 sm:px-10 py-2 sm:py-3 whitespace-nowrap " + fugaz.className
-        }
-      >
-        {text}
-      </p>
+      <p className="text-md fugaz">{text}</p>
     </div>
   );
 }
+
+export default Button;

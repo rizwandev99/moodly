@@ -8,11 +8,15 @@
   -webkit-text-fill-color: transparent;
 }
 
-.purpleShadow {
-  box-shadow: 3px 3px 1px 1px lavender;
+.fugaz {
+  font-family: var(--font-fugaz-one);
+  /* Add any additional styling */
 }
 
-.purpleShadow:hover {
-  transform: translate(3px, 3px);
-  box-shadow: 0px 0px 1px 1px lavender;
+.sans {
+  font-family: var(--font-geist-sans);
+}
+
+.mono {
+  font-family: var(--font-geist-mono);
 }
